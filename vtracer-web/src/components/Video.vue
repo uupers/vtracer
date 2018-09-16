@@ -2,8 +2,15 @@
   <div>
       <transition name="slide-fade">
         <div v-if="!isVideoStat" key="video">
-          <Button type="primary" @click="renderModal">Trace new video</Button>
-          <br/> <br/>
+          <Row>
+              <Col span="20"> 
+                <Input v-model="title" placeholder="视频名称/aid" style="width: 300px">
+                    <Button slot="append" icon="ios-search"  @click="filterSearch"></Button>
+                </Input>
+              </Col>
+              <Col span="4"><Button type="primary" @click="renderModal">Trace new video</Button></Col>
+          </Row>
+          <br/>
           <Table stripe :loading="loading" :columns="columns" :data="data"></Table>
           <br>
           <Page :total="total" :page-size="pageSize" :current="page" show-total class="paging" @on-change="fetchData"></Page>
@@ -20,6 +27,7 @@
 
 <script>
 import VideoStat from './VideoStat.vue'
+import moment from 'moment'
 export default {
   components: { VideoStat },
   data() {
@@ -47,11 +55,13 @@ export default {
         },
         {
           title: 'Record Time',
-          key: 'ctime'
+          key: 'ctime',
+          render: (h, data) => h('span', moment(data.row.ctime).format('YYYY-MM-DD HH:mm:ss'))
         },
         {
           title: 'End Time',
-          key: 'endTime'
+          key: 'endTime',
+          render: (h, data) => h('span', moment(data.row.endTime).format('YYYY-MM-DD HH:mm:ss'))
         },
         {
           title: 'Tracing',
@@ -102,13 +112,17 @@ export default {
       data: [],
       total: 0,
       page:1,
-      pageSize: 20
+      pageSize: 20,
+      title: ''
     }
   },
   methods: {
+    filterSearch(){
+      this.fetchData();
+    },
     fetchData(page = 1) {
       this.page = page
-      this.$api.get(`/trace/video/page/${page}`, {}, r => {
+      this.$api.get(`/trace/video`, {pageNum:page,title:this.title}, r => {
         this.data = r.data.list
         this.total = r.data.total
         this.pageSize = r.data.pageSize
@@ -173,7 +187,7 @@ export default {
     viewStat(record) {
       this.record = record
       this.isVideoStat = true
-    }
+    },
   },
   created() {
     this.fetchData()

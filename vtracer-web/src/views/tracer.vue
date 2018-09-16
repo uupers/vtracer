@@ -4,7 +4,7 @@
   background: #f5f7f9;
   position: relative;
   border-radius: 4px;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 .layout-header-bar {
   background: #fff;
@@ -13,7 +13,7 @@
 </style>
 <template>
     <div class="layout">
-        <Sider :style="{position: 'fixed', height: '100vh', left: 0, overflow: 'auto'}">
+        <Sider :style="{position: 'fixed', height: '100vh', left: 0, overflow: 'auto', zIndex:'99'}">
             <Menu :active-name="this.$route.params.subpage" theme="dark" width="auto" :open-names="['tracer']"  @on-select="onMenuSelect">
                 <Submenu name="tracer">
                     <template slot="title">
@@ -22,10 +22,12 @@
                     </template>
                     <MenuItem name="member">Member</MenuItem>
                     <MenuItem name="video">Video</MenuItem>
+                    <MenuItem name="faq">FAQ</MenuItem>
+                    <MenuItem name="little-nest">Little Nest (Beta)</MenuItem>
                 </Submenu>
             </Menu>
         </Sider>
-        <Layout :style="{marginLeft: '200px'}">
+        <Layout :style="{marginLeft: '200px',  minWidth: '1200px'}">
             <Header :style="{background: '#fff', boxShadow: '0 2px 3px 2px rgba(0,0,0,.1)'}">
                 <div :style="{float:'right', marginTop:'20px',lineHeight:'20px',fontSize:'16px'}">
                     <Dropdown @on-click="onLogout" placement="bottom-start">

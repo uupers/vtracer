@@ -50,11 +50,12 @@ function apiAxios(method, url, params, success, failure) {
     withCredentials: false
   })
     .then(function(res) {
-      if(res.data.code == 200){
+      if(res.data.code === 0){
         success(res.data)
       }else{
+        // console.warn(res)
         iView.Notice.error({
-          title: res.data.msg
+          title: res.data.message
         })
       }
     })
@@ -69,6 +70,7 @@ function apiAxios(method, url, params, success, failure) {
 
 // 返回在vue模板中的调用接口
 export default {
+  root,
   get: function(url, params, success, failure) {
     return apiAxios('GET', url, params, success, failure)
   },

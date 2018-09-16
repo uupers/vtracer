@@ -1,13 +1,13 @@
 <template>
   <div>
-    <div :style="{float:'right', marginRight:'50px'}">
+    <!-- <div :style="{float:'right', marginRight:'50px'}">
       <DatePicker type="datetimerange" 
                 placeholder="Select date and time" 
                 style="width: 300px"
-                :value="dateValue"
+                :value="timestamp2str(dateValue)"
                 :disabled="true"
                 @on-change="fetchVideoStat"></DatePicker>
-    </div>
+    </div> -->
     <h2>{{record.title}}</h2>
     <div :style="{position:'relative'}">            
       <LineChart :opt="opt"></LineChart>
@@ -17,7 +17,7 @@
       </Spin>
     </div>
     <br>
-    <DateSlider :startTime="str2timestamp(dateValue[0])" :endTime="str2timestamp(dateValue[1])" :onchange="sliderChanged"></DateSlider>
+    <DateSlider :startTime="dateValue[0]" :endTime="dateValue[1]" :onchange="sliderChanged"></DateSlider>
   </div>
 </template>
 <style>
@@ -38,7 +38,7 @@ export default {
   },
   data() {
     const et = moment().isBefore(moment(this.record.endTime))
-      ? moment().format('YYYY-MM-DD HH:mm:ss')
+      ? +moment()
       : this.record.endTime
     return {
       spinShow: true,
@@ -50,44 +50,6 @@ export default {
     this.fetchVideoStat(this.dateValue)
   },
   methods: {
-    // 分块加载数据
-    rangeFetch(timerange) {
-      const aaa = moment()
-      this.spinShow = true
-      const stepHours = 24
-      const wrapList = []
-      const diffhours = moment(timerange[1]).diff(moment(timerange[0]), 'hours', true)
-      let latch = Math.ceil(diffhours / stepHours)
-      // console.log('latch total:', latch)
-      for (let st = moment(timerange[0]); st.isBefore(moment(timerange[1])); ) {
-        ;(() => {
-          const stStr = st.format('YYYY-MM-DD HH:mm:ss')
-          const etStr = st.add(stepHours, 'hours').format('YYYY-MM-DD HH:mm:ss')
-
-          const sublist = []
-          wrapList.push(sublist)
-          const url = `/trace/videoStat/${this.record.aid}`
-          this.$api.get(url, { st: stStr, et: etStr }, r => {
-            if (r.data.list) {
-              r.data.list.forEach(v => sublist.push(v))
-            }
-            latch--
-            // console.log('latch rest:', latch)
-          })
-        })()
-      }
-
-      const flag = setInterval(() => {
-        if (latch <= 0) {
-          const rslist = []
-          wrapList.forEach(v => rslist.push(...v))
-          this.opt = this.createOpt(rslist)
-          clearInterval(flag)
-          this.spinShow = false
-          console.log('cost', moment().diff(aaa))
-        }
-      }, 100)
-    },
     fetchVideoStat(timerange) {
       // this.rangeFetch(timerange)
       this.spinShow = true
@@ -105,7 +67,7 @@ export default {
         tooltip: {
           trigger: 'axis',
           formatter: v => {
-            let str = `${v[0].value[0]}`
+            let str = `${moment(v[0].value[0]).format('YYYY-MM-DD HH:mm:ss')}`
             for(let i=0; i < v.length; i++){
               str += `<br/>${v[i].marker} ${v[i].name}: ${v[i].value[1]}`
             }
@@ -139,7 +101,7 @@ export default {
             showSymbol: false,
             hoverAnimation: false,
             yAxisIndex: field == 'view' ? 0 : 1,
-            data: videoStatList.map(v => {
+            data: videoStatList.filter(v => v[field] > 0).map(v => {
               return {
                 name: field,
                 value: [v.ctime, v[field]]
@@ -152,14 +114,14 @@ export default {
     },
     sliderChanged(left, right) {
       // console.log(left,right)
-      const timeranger = [
-        moment(left).format('YYYY-MM-DD HH:mm:ss'),
-        moment(right).format('YYYY-MM-DD HH:mm:ss')
-      ]
+      const timeranger = [ +moment(left), +moment(right) ]
       this.fetchVideoStat(timeranger)
     },
     str2timestamp(str){
       return +moment(str)
+    },
+    timestamp2str(arr){
+      return arr.map(v => moment(v).format('YYYY-MM-DD HH:mm:ss'))
     }
   }
 }

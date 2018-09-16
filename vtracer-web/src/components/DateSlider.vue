@@ -1,9 +1,5 @@
 <template>
-    <div class="date-slider"
-      @mousemove="mouseMove"
-      @mouseup="mouseUp"
-      @mousedown="mouseDown"
-      @mouseleave="mouseLeave" ref="date-slider">
+    <div class="date-slider" ref="date-slider">
         <div class="date-slider-bar" :style="{left:leftVal+'px', width:(rightVal-leftVal)+'px'}"></div>
         <div class="date-slider-center-tip">{{val2dateFormat(leftVal)}} ~ {{val2dateFormat(rightVal)}}</div>
     </div>
@@ -23,12 +19,18 @@ export default {
       rightVal: 700,
       prevLeftVal: 0,
       prevRightVal: 0,
+      prevX:0,
       isDown: false,
       moveMode: 1, // 1-normal,2-left,3-right
       moving: false
     }
   },
   mounted() {
+    // 全局事件绑定
+    document.body.onmousemove = this.mouseMove
+    document.body.onmousedown = this.mouseDown
+    document.body.onmouseup = this.mouseUp
+
     this.dateSliderWidth = Number.parseInt(window.getComputedStyle(this.$refs['date-slider']).width)
     this.leftVal = 0
     this.rightVal = this.dateSliderWidth
@@ -41,18 +43,21 @@ export default {
   methods: {
     mouseMove(e) {
       if (this.isDown && !this.moving) {
+        e.preventDefault();
         this.moving = true
         const inwidth = this.rightVal - this.leftVal
+        const movementX = e.screenX - this.prevX;
+        this.prevX = e.screenX;
         switch (this.moveMode) { // 1-normal,2-left,3-right
           case 1:
-            this.leftVal += e.movementX / 1.1
-            this.rightVal += e.movementX / 1.1
+            this.leftVal += movementX
+            this.rightVal += movementX
             break
           case 2:
-            this.leftVal += e.movementX / 1.1
+            this.leftVal += movementX
             break
           case 3:
-            this.rightVal += e.movementX / 1.1
+            this.rightVal += movementX
             break
         }
         if (this.leftVal < 0) {
@@ -74,28 +79,27 @@ export default {
       }
     },
     mouseDown(e) {
+      
+      if (e.target.className !== 'date-slider-bar') {
+        return
+      }
+      this.prevX = e.screenX;
+      console.log(e)
       this.isDown = true
       const btnwidth = 8
-      console.log(e)
-      if (e.target.className == 'date-slider-bar') {
-        if (e.offsetX < btnwidth) {
-          this.moveMode = 2
-          // this.leftVal -= 1
-        } else if (this.rightVal - e.offsetX - this.leftVal <= btnwidth) {
-          this.moveMode = 3
-          // this.rightVal += 1
-        } else {
-          this.moveMode = 1
-        }
+      if (e.offsetX < btnwidth) {
+        this.moveMode = 2
+      } else if (this.rightVal - e.offsetX - this.leftVal <= btnwidth) {
+        this.moveMode = 3
+      } else {
+        this.moveMode = 1
       }
     },
     mouseUp(e) {
-      this.isDown = false
-      this.handleChange()
-    },
-    mouseLeave(e) {
-      // console.log('mouse leave')
-      this.mouseUp(e)
+      if(this.isDown){
+        this.isDown = false
+        this.handleChange()
+      }
     },
     handleChange() {
       // 执行回调

@@ -2,8 +2,19 @@
 <div>
   <transition name="slide-fade">
     <div v-if="mainTab" key="traceMember">
-        <Button type="primary" @click="renderModal">Trace new member</Button>
-        <br/> <br/>
+        <Row>
+          <Col span="20"> 
+            <Input v-model="name" placeholder="用户名称/mid" style="width: 300px">
+                <Select v-model="filterSelectValue" slot="prepend" style="width: 80px" @on-change="filterSearch">
+                    <Option value="all">All</Option>
+                    <Option value="keep">Keep on</Option>
+                </Select>
+                <Button slot="append" icon="ios-search"  @click="filterSearch"></Button>
+            </Input>
+          </Col>
+          <Col span="4"><Button type="primary" @click="renderModal">Trace new member</Button></Col>
+        </Row>
+        <br/>
         <Table stripe :loading="loading" :columns="columns" :data="data"></Table>
         <br/>
         <Page :total="total" :page-size="pageSize" :current="page" show-total class="paging" @on-change="fetchData"></Page>
@@ -18,6 +29,7 @@
 </template>
 <script>
 import MemberInfo from './MemberInfo.vue'
+import moment from 'moment'
 export default {
   components: {
     MemberInfo
@@ -50,7 +62,28 @@ export default {
         },
         {
           title: 'Record Time',
-          key: 'ctime'
+          key: 'ctime',
+          render: (h, data) => h('span', moment(data.row.ctime).format('YYYY-MM-DD HH:mm:ss'))
+        },
+        {
+          title: 'Keep on',
+          key: 'keep',
+          render: (h, data) => {
+            return h('i-switch', {
+              props: {
+                type: 'primary',
+                value: data.row.keep === 1 //控制开关的打开或关闭状态，官网文档属性是value
+              },
+              on: {
+                //触发事件是on-change,用引号括起来
+                'on-change': value =>
+                  this.toggleKeepStatus(data.row.mid, value ? 1 : 0, data.row.name)
+              }
+            },[
+              h('Icon',{slot:'open', props:{type:'android-done'}}),
+              h('Icon',{slot:'close', props:{type:'android-close'}}),
+            ])
+          }
         },
         {
           title: 'Action',
@@ -98,17 +131,38 @@ export default {
       data: [],
       page: 1,
       total: 0,
-      pageSize: 20
+      pageSize: 20,
+      name: '',
+      filterSelectValue: 'all',
     }
   },
   methods: {
+    filterSearch(){
+      this.fetchData();
+    },
     fetchData(page = 1) {
       this.page = page
-      this.$api.get(`/trace/member/page/${page}`, {}, r => {
+      const param = {
+        pageNum:page, 
+        name: this.name, 
+        keep: this.filterSelectValue === 'keep' ? 1 : null
+      }
+      this.$api.get(`/trace/member`, param, r => {
         this.data = r.data.list
         this.total = r.data.total
         this.pageSize = r.data.pageSize
         this.loading = false
+      })
+    },
+    toggleKeepStatus(mid, keep, name) {
+      this.$api.put(`/trace/member/${mid}/keep/${keep}`, {}, r => {
+        if (r.data.effect > 0) {
+          //
+        } else {
+          this.$Notice.error({
+            title: `Oops! ${name} is out of control.`
+          })
+        }
       })
     },
     renderModal() {
